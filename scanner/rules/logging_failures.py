@@ -13,7 +13,6 @@ def check(code_lines, add_vulnerability):
         if stripped.startswith("#"):
             continue
 
-        # Printing potential secrets
         if "print(" in low and any(w in low for w in SECRET_WORDS):
             add_vulnerability(
                 "A09: Security Logging and Monitoring Failures",
@@ -22,10 +21,7 @@ def check(code_lines, add_vulnerability):
                 "MEDIUM",
                 "MEDIUM",
             )
-
-        # Bare except printing errors (poor monitoring/alerting)
         if low.startswith("except:") or re.match(r"^except\s+[A-Za-z_][A-Za-z0-9_]*\s+as\s+\w+\s*:\s*$", low):
-            # Peek next line(s) for print
             nxt = code_lines[i + 1].strip().lower() if i + 1 < len(code_lines) else ""
             if "print(" in nxt:
                 add_vulnerability(
@@ -36,9 +32,7 @@ def check(code_lines, add_vulnerability):
                     "LOW",
                 )
 
-        # Print statements in login/auth contexts (heuristic)
         if ("@app.route('/login'" in low or "@app.route(\"/login\"" in low) and i + 3 < len(code_lines):
-            # scan a small window after the route for print usage
             window = " ".join(code_lines[i : i + 5]).lower()
             if "print(" in window:
                 add_vulnerability(

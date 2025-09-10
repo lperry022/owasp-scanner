@@ -1,9 +1,3 @@
-# Entry point for the OWASP PR Scanner CLI tool.
-# This script parses the command-line arguments (i.e., the file path to scan),
-# initializes the VulnerabilityScanner with the specified file, runs all rule checks,
-# and prints a formatted vulnerability report to the console.
-
-
 import argparse
 from scanner.core import VulnerabilityScanner
 

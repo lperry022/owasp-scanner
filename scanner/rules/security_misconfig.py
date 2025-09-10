@@ -1,13 +1,5 @@
 # A05:2021 – Security Misconfiguration
-#
-# It flags risky configuration patterns commonly seen in Python, JS, and YAML:
-# 1) Debug modes enabled (Django DEBUG=True, Flask app.run(debug=True)).
-# 2) Overly permissive hosts or CORS settings (ALLOWED_HOSTS=['*'], Access-Control-Allow-Origin: *).
-# 3) Insecure cookie or transport flags (SECURE_... = False, SESSION_COOKIE_SECURE=False).
-# 4) Hardcoded or default-like secrets in config contexts (SECRET_KEY='...', password='admin').
-#
-# Function:
-# - `check(code_lines, add_vulnerability)`: Scans lines and reports findings with context.
+
 
 import re
 
@@ -26,7 +18,6 @@ OBVIOUS_DEFAULTS = {'admin', 'password', 'changeme', 'change_me', 'default', 'te
 
 def check(code_lines, add_vulnerability):
     for i, line in enumerate(code_lines):
-        # Debug modes
         if DJANGO_DEBUG_RE.search(line):
             add_vulnerability(
                 "A05: Security Misconfiguration",
@@ -44,7 +35,6 @@ def check(code_lines, add_vulnerability):
                 "MEDIUM",
             )
 
-        # Permissive hosts and CORS
         if DJANGO_ALLOWED_HOSTS_ANY_RE.search(line):
             add_vulnerability(
                 "A05: Security Misconfiguration",
@@ -62,7 +52,6 @@ def check(code_lines, add_vulnerability):
                 "MEDIUM",
             )
 
-        # Insecure cookie and transport flags
         if SECURE_FLAG_FALSE_RE.search(line) or INSECURE_COOKIE_RE.search(line):
             add_vulnerability(
                 "A05: Security Misconfiguration",
@@ -72,7 +61,6 @@ def check(code_lines, add_vulnerability):
                 "MEDIUM",
             )
 
-        # Default-like or hardcoded secrets
         m = DEFAULTY_SECRET_RE.search(line)
         if m:
             key, value = m.group(1), m.group(2)

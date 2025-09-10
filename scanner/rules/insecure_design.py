@@ -14,7 +14,6 @@ PATTERNS = [
 def check(code_lines, add_vulnerability):
     for i, line in enumerate(code_lines):
         stripped = line.strip()
-        # do NOT skip comments — we want to catch insecure design notes in comments too
         if any(p.search(stripped) for p in PATTERNS):
             add_vulnerability(
                 "A04: Insecure Design",

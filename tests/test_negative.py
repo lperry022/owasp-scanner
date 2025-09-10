@@ -6,7 +6,6 @@ import hashlib
 import requests
 from flask import Flask
 
-# Assume a real auth decorator exists in the project. The scanner only checks for its presence.
 def login_required(fn):  
     return fn
 

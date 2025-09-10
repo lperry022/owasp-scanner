@@ -11,11 +11,9 @@ def check(code_lines, add_vulnerability):
     for i, line in enumerate(code_lines):
         stripped = line.strip()
 
-        # Skip comments
         if stripped.startswith("#"):
             continue
 
-        # Weak crypto usage
         if any(h in stripped.lower() for h in weak_hashes):
             add_vulnerability(
                 "A03: Sensitive Data Exposure",
@@ -25,10 +23,9 @@ def check(code_lines, add_vulnerability):
                 "HIGH"
             )
 
-        # Hardcoded secrets (but ignore env lookups and hashes)
         if any(kw in stripped.lower() for kw in sensitive_keywords) and "=" in stripped:
             if "os.environ" in stripped or "hashlib.sha256" in stripped:
-                continue  # safe usage, skip
+                continue  
             add_vulnerability(
                 "A03: Sensitive Data Exposure",
                 f"Potential hardcoded sensitive data: {stripped}",

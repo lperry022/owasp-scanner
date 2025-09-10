@@ -3,16 +3,14 @@
 
 import re
 
-# e.g., flask==2.0.1, Django==1.11.29, requests==2.25.1
 PIN_RE = re.compile(r'^\s*([A-Za-z0-9][A-Za-z0-9_\-]*)\s*==\s*([A-Za-z0-9\.\-\+]+)\s*$')
 
-SUSPECT_PACKAGES = {"flask", "django"}  # expand as needed
+SUSPECT_PACKAGES = {"flask", "django"}  
 
 def check(code_lines, add_vulnerability):
     for i, line in enumerate(code_lines):
         stripped = line.strip()
 
-        # Skip comments entirely
         if stripped.startswith("#"):
             continue
 

@@ -1,10 +1,3 @@
-# Responsibilities:
-# - Reads target file, stores code lines
-# - Manages vulnerability list
-# - Runs all rule checks (auto-discovers rules in scanner/rules)
-# - Provides add_vulnerability callback
-# - Prints a grouped, colourised report
-
 import os
 import importlib
 import pkgutil
@@ -21,7 +14,6 @@ def _load_rule_modules():
         if hasattr(mod, "check"):
             modules.append(mod)
 
-    # Stable order: by CATEGORY "A01: ..." if provided, else by module name
     def key(m):
         cat = getattr(m, "CATEGORY", "")
         head = cat.split(":", 1)[0].strip() if cat else ""
@@ -61,7 +53,6 @@ class VulnerabilityScanner:
 
     def run_checks(self):
         for rule in RULE_MODULES:
-            # each rule exposes: check(code_lines, add_vulnerability)
             rule.check(self.code_lines, self.add_vulnerability)
 
     def run(self):
@@ -70,7 +61,6 @@ class VulnerabilityScanner:
         self.run_checks()
 
     def report(self):
-        # ---- colour helpers ----
         def supports_truecolor() -> bool:
             return os.environ.get("COLORTERM", "").lower() in ("truecolor", "24bit")
 
@@ -90,17 +80,16 @@ class VulnerabilityScanner:
 
         TRUECOLOR = supports_truecolor()
 
-        # Severity colours (true-color -> fallback)
-        CRIT = (rgb(220, 20, 60) if TRUECOLOR else ANSI["red"] + ANSI["bold"])  # crimson
-        HIGH = (rgb(255, 0, 0) if TRUECOLOR else ANSI["red"])                   # red
-        MED = (rgb(255, 165, 0) if TRUECOLOR else ANSI["yellow"])               # orange-ish
-        LOW = (rgb(0, 200, 0) if TRUECOLOR else ANSI["green"])                  # green
+        CRIT = (rgb(220, 20, 60) if TRUECOLOR else ANSI["red"] + ANSI["bold"])  
+        HIGH = (rgb(255, 0, 0) if TRUECOLOR else ANSI["red"])                   
+        MED = (rgb(255, 165, 0) if TRUECOLOR else ANSI["yellow"])               
+        LOW = (rgb(0, 200, 0) if TRUECOLOR else ANSI["green"])                  
 
         RESET = ANSI["reset"]
         BOLD = ANSI["bold"]
-        HDR = (rgb(180, 130, 255) if TRUECOLOR else ANSI["magenta"])            # section header
-        TITLE = (rgb(120, 220, 200) if TRUECOLOR else ANSI["cyan"])             # title
-        SUM = (rgb(255, 215, 0) if TRUECOLOR else ANSI["yellow"])               # summary label
+        HDR = (rgb(180, 130, 255) if TRUECOLOR else ANSI["magenta"])            
+        TITLE = (rgb(120, 220, 200) if TRUECOLOR else ANSI["cyan"])             
+        SUM = (rgb(255, 215, 0) if TRUECOLOR else ANSI["yellow"])               
 
         sev_color = {"CRITICAL": CRIT, "HIGH": HIGH, "MEDIUM": MED, "LOW": LOW}
 
@@ -111,7 +100,6 @@ class VulnerabilityScanner:
             print(f"{ok}✅ No vulnerabilities found.{RESET}")
             return
 
-        # Group by category
         groups = {}
         for v in self.vulnerabilities:
             groups.setdefault(v["category"], []).append(v)
@@ -122,7 +110,6 @@ class VulnerabilityScanner:
 
         for cat in sorted(groups.keys(), key=cat_key):
             items = sorted(groups[cat], key=lambda x: x["line"])
-            # tally
             sev_counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
             for v in items:
                 sev_counts[v["severity"]] = sev_counts.get(v["severity"], 0) + 1

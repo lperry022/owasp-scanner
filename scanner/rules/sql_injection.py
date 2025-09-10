@@ -1,12 +1,5 @@
 # A03:2021 – Injection*
 
-# Specifically, it searches for suspicious SQL query patterns in Python code,
-# such as unparameterized queries or string concatenation in `execute()` calls.
-
-# Function:
-# - `check(code_lines, add_vulnerability)`: Accepts lines of code and a callback to report findings.
-#   Uses regular expressions to detect potential SQLi and sends alerts via `add_vulnerability()`.
-
 import re
 
 def check(code_lines, add_vulnerability):
@@ -27,7 +20,6 @@ def check(code_lines, add_vulnerability):
                     "MEDIUM"
                 )
 
-        # Detect execution of those suspicious queries
         for var_name in assigned_queries:
             if f"execute({var_name})" in line:
                 add_vulnerability(

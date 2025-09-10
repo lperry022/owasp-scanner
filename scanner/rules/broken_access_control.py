@@ -22,23 +22,18 @@ DEF_RE = re.compile(r'^\s*def\s+\w+\s*\(', re.IGNORECASE)
 DRF_ALLOWANY_RE = re.compile(r'permission_classes\s*=\s*\[\s*AllowAny\s*\]')
 DRF_IMPORT_ALLOWANY_RE = re.compile(r'from\s+rest_framework\.permissions\s+import\s+.*AllowAny', re.IGNORECASE)
 
-# app.get('/path', handler) or router.post("/path", handler)
-# If there is a direct callback right after the path, there is probably no middleware.
 EXPRESS_ROUTE_RE = re.compile(
     r'\b(?:app|router)\.(get|post|put|patch|delete|options|head)\s*\(\s*[\'"][^\'"]+[\'"]\s*,\s*(?:function|\()',
     re.IGNORECASE,
 )
 
 def check(code_lines, add_vulnerability):
-    # Track whether DRF AllowAny is imported to increase confidence
     drf_allowany_seen = any(DRF_IMPORT_ALLOWANY_RE.search(line) for line in code_lines)
 
-    # -------- Flask route without auth decorator ----------
     i = 0
     while i < len(code_lines):
         line = code_lines[i]
         if FLASK_ROUTE_RE.search(line):
-            # Collect decorators until we hit the function def line
             decorators = []
             j = i
             while j + 1 < len(code_lines) and not DEF_RE.search(code_lines[j + 1]):
@@ -46,10 +41,8 @@ def check(code_lines, add_vulnerability):
                 if code_lines[j].lstrip().startswith('@'):
                     decorators.append(code_lines[j].strip())
 
-            # If next line is a function def, evaluate decorators
             if j + 1 < len(code_lines) and DEF_RE.search(code_lines[j + 1]):
                 has_auth = any(AUTH_DECORATOR_RE.search(d) for d in decorators)
-                # Heuristic: mark as High likelihood if path looks sensitive
                 path_hint = ""
                 m = re.search(r'route\s*\(\s*[\'"]([^\'"]+)', line, re.IGNORECASE)
                 if m:

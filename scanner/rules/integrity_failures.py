@@ -3,7 +3,7 @@
 
 import re
 
-UNSAFE_YAML_RE = re.compile(r'\byaml\.load\s*\(')  # safe form is yaml.safe_load
+UNSAFE_YAML_RE = re.compile(r'\byaml\.load\s*\(')  
 
 def check(code_lines, add_vulnerability):
     for i, line in enumerate(code_lines):
@@ -11,7 +11,6 @@ def check(code_lines, add_vulnerability):
         if stripped.startswith("#"):
             continue
 
-        # Dangerous dynamic evaluation
         if "eval(" in stripped or "exec(" in stripped:
             add_vulnerability(
                 "A08: Software and Data Integrity Failures",
@@ -21,7 +20,6 @@ def check(code_lines, add_vulnerability):
                 "HIGH",
             )
 
-        # Unsafe deserialization (pickle)
         if "pickle.load(" in stripped or "pickle.loads(" in stripped:
             add_vulnerability(
                 "A08: Software and Data Integrity Failures",
@@ -31,7 +29,6 @@ def check(code_lines, add_vulnerability):
                 "HIGH",
             )
 
-        # Unsafe YAML load (must be yaml.safe_load)
         if UNSAFE_YAML_RE.search(stripped) and "safe_load" not in stripped:
             add_vulnerability(
                 "A08: Software and Data Integrity Failures",
@@ -41,7 +38,6 @@ def check(code_lines, add_vulnerability):
                 "MEDIUM",
             )
 
-        # shell=True in subprocess calls
         if "subprocess." in stripped and "shell=True" in stripped:
             add_vulnerability(
                 "A08: Software and Data Integrity Failures",
