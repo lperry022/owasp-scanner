@@ -61,45 +61,47 @@ class VulnerabilityScanner:
         self.run_checks()
 
     def report(self):
+        """Outputs results with colors locally, or clean Markdown when in GitHub Actions."""
         def supports_truecolor() -> bool:
             return os.environ.get("COLORTERM", "").lower() in ("truecolor", "24bit")
+
+        disable_color = os.environ.get("GITHUB_ACTIONS") == "true"
 
         def rgb(r, g, b) -> str:
             return f"\033[38;2;{r};{g};{b}m"
 
         ANSI = {
-            "reset": "\033[0m",
-            "bold": "\033[1m",
-            "cyan": "\033[96m",
-            "magenta": "\033[95m",
-            "yellow": "\033[93m",
-            "red": "\033[91m",
-            "green": "\033[92m",
-            "blue": "\033[94m",
+            "reset": "" if disable_color else "\033[0m",
+            "bold": "" if disable_color else "\033[1m",
+            "cyan": "" if disable_color else "\033[96m",
+            "magenta": "" if disable_color else "\033[95m",
+            "yellow": "" if disable_color else "\033[93m",
+            "red": "" if disable_color else "\033[91m",
+            "green": "" if disable_color else "\033[92m",
+            "blue": "" if disable_color else "\033[94m",
         }
 
-        TRUECOLOR = supports_truecolor()
+        TRUECOLOR = supports_truecolor() and not disable_color
 
-        CRIT = (rgb(220, 20, 60) if TRUECOLOR else ANSI["red"] + ANSI["bold"])  
-        HIGH = (rgb(255, 0, 0) if TRUECOLOR else ANSI["red"])                   
-        MED = (rgb(255, 165, 0) if TRUECOLOR else ANSI["yellow"])               
-        LOW = (rgb(0, 200, 0) if TRUECOLOR else ANSI["green"])                  
+        sev_color = {
+            "CRITICAL": "**CRITICAL**" if disable_color else (rgb(220, 20, 60) if TRUECOLOR else ANSI["red"] + ANSI["bold"]),
+            "HIGH": "**HIGH**" if disable_color else (rgb(255, 0, 0) if TRUECOLOR else ANSI["red"]),
+            "MEDIUM": "**MEDIUM**" if disable_color else (rgb(255, 165, 0) if TRUECOLOR else ANSI["yellow"]),
+            "LOW": "**LOW**" if disable_color else (rgb(0, 200, 0) if TRUECOLOR else ANSI["green"]),
+        }
 
-        RESET = ANSI["reset"]
-        BOLD = ANSI["bold"]
-        HDR = (rgb(180, 130, 255) if TRUECOLOR else ANSI["magenta"])            
-        TITLE = (rgb(120, 220, 200) if TRUECOLOR else ANSI["cyan"])             
-        SUM = (rgb(255, 215, 0) if TRUECOLOR else ANSI["yellow"])               
-
-        sev_color = {"CRITICAL": CRIT, "HIGH": HIGH, "MEDIUM": MED, "LOW": LOW}
-
-        print(f"\n{BOLD}{TITLE}Scan Results for {self.file_path}:{RESET}")
+        # ---- Print header ----
+        if disable_color:
+            print(f"\n### 🔒 OWASP Scanner Results for `{self.file_path}`")
+        else:
+            print(f"\n{ANSI['bold']}{ANSI['cyan']}Scan Results for {self.file_path}:{ANSI['reset']}")
 
         if not self.vulnerabilities:
-            ok = rgb(0, 200, 0) if TRUECOLOR else ANSI["green"]
-            print(f"{ok}✅ No vulnerabilities found.{RESET}")
+            msg = "✅ No vulnerabilities found."
+            print(msg)
             return
 
+        # ---- Group by category ----
         groups = {}
         for v in self.vulnerabilities:
             groups.setdefault(v["category"], []).append(v)
@@ -112,22 +114,27 @@ class VulnerabilityScanner:
             items = sorted(groups[cat], key=lambda x: x["line"])
             sev_counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
             for v in items:
-                sev_counts[v["severity"]] = sev_counts.get(v["severity"], 0) + 1
+                sev_counts[v["severity"]] += 1
 
-            total = len(items)
-            print(f"\n{BOLD}{HDR}=== {cat} ({total} finding{'s' if total != 1 else ''}) ==={RESET}")
+            if disable_color:
+                print(f"\n#### {cat} ({len(items)} findings)")
+                chips = []
+                for k in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
+                    if sev_counts[k]:
+                        chips.append(f"{k}: {sev_counts[k]}")
+                if chips:
+                    print(f"**Summary:** " + ", ".join(chips))
+            else:
+                print(f"\n{ANSI['bold']}{ANSI['magenta']}=== {cat} ({len(items)} findings) ==={ANSI['reset']}")
 
-            chips = []
-            for k in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
-                n = sev_counts.get(k, 0)
-                if n:
-                    chips.append(f"{sev_color[k]}{k.title()}{RESET}: {n}")
-            if chips:
-                print(f"{SUM}Summary:{RESET} " + ", ".join(chips))
-
+            # ---- List individual vulnerabilities ----
             for v in items:
-                sc = sev_color.get(v["severity"], ANSI["blue"])
-                print(f"\n  {BOLD}• Line {v['line']} |{RESET} "
-                      f"Severity {sc}{v['severity']}{RESET} | "
-                      f"Confidence {v['confidence']}")
-                print(f"    → {v['description']}")
+                sev = sev_color.get(v["severity"], v["severity"])
+                if disable_color:
+                    print(f"- Line {v['line']} | Severity {sev} | Confidence {v['confidence']}")
+                    print(f"  → {v['description']}")
+                else:
+                    print(f"  {ANSI['bold']}• Line {v['line']} |{ANSI['reset']} "
+                          f"Severity {sev}{ANSI['reset']} | "
+                          f"Confidence {v['confidence']}")
+                    print(f"    → {v['description']}")
