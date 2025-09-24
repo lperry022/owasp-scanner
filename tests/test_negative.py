@@ -1,1 +1,0 @@
-"# Negative test file" 
