@@ -6,6 +6,8 @@ import pickle
 import subprocess
 from flask import Flask, Response
 
+
+
 # ---------- A05: Security Misconfiguration ----------
 SECRET_KEY = "changeme"           
 ALLOWED_HOSTS = ['*']              
